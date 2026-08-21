@@ -67,7 +67,7 @@ def get_ticket_stats(db: Session = Depends(get_db)):
     "/{ticket_id}",
     response_model=schemas.TicketDetailResponse,
     summary="Get individual ticket details",
-    description="Retrieve complete ticket information including internal notes history.",
+    description="Retrieve complete ticket information including internal notes history and edit logs.",
 )
 def get_ticket(
     ticket_id: str,
@@ -84,9 +84,9 @@ def get_ticket(
 
 @router.put(
     "/{ticket_id}",
-    response_model=schemas.TicketUpdateResponse,
-    summary="Update ticket status, priority, or add a note",
-    description="Update workflow status (Open, In Progress, Closed), priority, and optionally attach an internal note.",
+    response_model=schemas.TicketDetailResponse,
+    summary="Update ticket details, status, priority, or add a note",
+    description="Update workflow fields (Subject, Description, Status, Priority, Customer Name, Email) and optionally attach a note. Tracks all modifications in audit edit logs.",
 )
 def update_ticket(
     ticket_id: str,
@@ -101,13 +101,26 @@ def update_ticket(
         )
 
     updated_ticket = crud.update_ticket(db=db, db_ticket=ticket, ticket_update=ticket_update)
-    return schemas.TicketUpdateResponse(
-        success=True,
-        ticket_id=updated_ticket.ticket_id,
-        status=updated_ticket.status,
-        priority=updated_ticket.priority,
-        updated_at=updated_ticket.updated_at,
-    )
+    return updated_ticket
+
+
+@router.get(
+    "/{ticket_id}/logs",
+    response_model=List[schemas.TicketEditLogResponse],
+    summary="Get ticket edit logs / audit history",
+    description="Retrieve all historical edits and field changes for a specific ticket.",
+)
+def get_ticket_logs(
+    ticket_id: str,
+    db: Session = Depends(get_db),
+):
+    ticket = crud.get_ticket_by_ticket_id(db=db, ticket_id=ticket_id)
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ticket '{ticket_id}' not found.",
+        )
+    return crud.get_ticket_edit_logs(db=db, ticket_id=ticket_id)
 
 
 @router.post(

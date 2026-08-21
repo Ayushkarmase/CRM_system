@@ -32,6 +32,23 @@ class NoteResponse(NoteBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TicketEditLogResponse(BaseModel):
+    id: int
+    ticket_id: int
+    field_name: str
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+    created_at: datetime
+
+    @field_serializer("created_at")
+    def serialize_datetime(self, dt: datetime) -> str:
+        if dt and dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat() if dt else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class TicketCreate(BaseModel):
     customer_name: str = Field(..., min_length=1, max_length=255)
     customer_email: EmailStr
@@ -56,6 +73,10 @@ class TicketCreate(BaseModel):
 
 
 class TicketUpdate(BaseModel):
+    customer_name: Optional[str] = None
+    customer_email: Optional[EmailStr] = None
+    subject: Optional[str] = None
+    description: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[str] = None
     notes: Optional[str] = None
@@ -82,6 +103,15 @@ class TicketUpdate(BaseModel):
             return matched[0]
         raise ValueError(f"Invalid priority '{v}'. Allowed values: Low, Medium, High, Urgent")
 
+    @field_validator("customer_name", "subject", "description")
+    @classmethod
+    def validate_optional_non_empty(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        if not v.strip():
+            raise ValueError("Field cannot be empty or blank")
+        return v.strip()
+
 
 class TicketResponse(BaseModel):
     ticket_id: str
@@ -105,6 +135,7 @@ class TicketResponse(BaseModel):
 
 class TicketDetailResponse(TicketResponse):
     notes: List[NoteResponse] = []
+    edit_logs: List[TicketEditLogResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -112,15 +143,22 @@ class TicketDetailResponse(TicketResponse):
 class TicketUpdateResponse(BaseModel):
     success: bool = True
     ticket_id: str
+    customer_name: str
+    customer_email: str
+    subject: str
+    description: str
     status: str
     priority: str
     updated_at: datetime
+    edit_logs: List[TicketEditLogResponse] = []
 
     @field_serializer("updated_at", check_fields=False)
     def serialize_datetime(self, dt: datetime) -> str:
         if dt and dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat() if dt else ""
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StatsResponse(BaseModel):

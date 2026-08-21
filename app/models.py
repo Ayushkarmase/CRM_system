@@ -19,6 +19,7 @@ class Ticket(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     notes = relationship("Note", back_populates="ticket", cascade="all, delete-orphan", order_by="Note.created_at.asc()")
+    edit_logs = relationship("TicketEditLog", back_populates="ticket", cascade="all, delete-orphan", order_by="TicketEditLog.created_at.desc()")
 
 
 class Note(Base):
@@ -30,3 +31,16 @@ class Note(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     ticket = relationship("Ticket", back_populates="notes")
+
+
+class TicketEditLog(Base):
+    __tablename__ = "ticket_edit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    field_name = Column(String(50), nullable=False)
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    ticket = relationship("Ticket", back_populates="edit_logs")

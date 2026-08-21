@@ -28,7 +28,7 @@ export const ticketApi = {
     return response.data;
   },
 
-  // Get single ticket detail by TKT-XXX ID
+  // Get single ticket detail by TKT-XXX ID (includes notes & edit logs)
   getTicket: async (ticketId) => {
     const response = await api.get(`/api/tickets/${ticketId}`);
     return response.data;
@@ -40,9 +40,15 @@ export const ticketApi = {
     return response.data;
   },
 
-  // Update ticket status or priority
+  // Update ticket fields (status, priority, subject, description, customer_name, customer_email, notes)
   updateTicket: async (ticketId, updateData) => {
     const response = await api.put(`/api/tickets/${ticketId}`, updateData);
+    return response.data;
+  },
+
+  // Get ticket audit edit logs
+  getTicketLogs: async (ticketId) => {
+    const response = await api.get(`/api/tickets/${ticketId}/logs`);
     return response.data;
   },
 

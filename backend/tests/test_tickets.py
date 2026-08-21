@@ -4,6 +4,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import os
+import sys
+
+# Ensure backend and project root are in sys.path for direct test execution and IDE resolution
+_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
+if _ROOT_DIR not in sys.path:
+    sys.path.insert(0, _ROOT_DIR)
+
 from app.main import app
 from app.database import Base, get_db
 
@@ -139,6 +150,7 @@ def test_get_ticket_detail_and_not_found():
     assert res.status_code == 200
     assert res.json()["ticket_id"] == t_id
     assert res.json()["notes"] == []
+    assert res.json()["edit_logs"] == []
 
     # 404 test
     res_404 = client.get("/api/tickets/TKT-999")
@@ -174,6 +186,61 @@ def test_update_ticket_and_add_notes():
     assert len(notes) == 2
     assert notes[0]["note_text"] == "Initial investigation note"
     assert notes[1]["note_text"] == "Followed up with user"
+
+
+def test_edit_ticket_and_audit_logs():
+    created = client.post("/api/tickets", json={
+        "customer_name": "Vikram Singh",
+        "customer_email": "vikram@example.com",
+        "subject": "Initial Subject",
+        "description": "Initial Description",
+        "priority": "Low"
+    }).json()
+    t_id = created["ticket_id"]
+
+    # Edit multiple fields: subject, description, priority, customer_name
+    edit_payload = {
+        "customer_name": "Vikram S. Rathore",
+        "subject": "Updated Subject Title",
+        "description": "Updated Description text with more details.",
+        "priority": "Urgent",
+        "status": "In Progress"
+    }
+    edit_res = client.put(f"/api/tickets/{t_id}", json=edit_payload)
+    assert edit_res.status_code == 200
+    updated_data = edit_res.json()
+    assert updated_data["customer_name"] == "Vikram S. Rathore"
+    assert updated_data["subject"] == "Updated Subject Title"
+    assert updated_data["priority"] == "Urgent"
+    assert updated_data["status"] == "In Progress"
+
+    # Fetch logs via GET /api/tickets/{t_id}/logs
+    logs_res = client.get(f"/api/tickets/{t_id}/logs")
+    assert logs_res.status_code == 200
+    logs = logs_res.json()
+    assert len(logs) == 5
+
+    # Check that field changes have correct old and new values
+    field_map = {log["field_name"]: (log["old_value"], log["new_value"]) for log in logs}
+    assert field_map["customer_name"] == ("Vikram Singh", "Vikram S. Rathore")
+    assert field_map["subject"] == ("Initial Subject", "Updated Subject Title")
+    assert field_map["description"] == ("Initial Description", "Updated Description text with more details.")
+    assert field_map["priority"] == ("Low", "Urgent")
+    assert field_map["status"] == ("Open", "In Progress")
+
+    # Second edit: change email and status to Closed
+    second_edit = client.put(f"/api/tickets/{t_id}", json={
+        "customer_email": "vikram.new@example.com",
+        "status": "Closed"
+    })
+    assert second_edit.status_code == 200
+
+    logs2_res = client.get(f"/api/tickets/{t_id}/logs")
+    logs2 = logs2_res.json()
+    assert len(logs2) == 7
+    field_map2 = {log["field_name"]: (log["old_value"], log["new_value"]) for log in logs2[:2]}
+    assert field_map2["customer_email"] == ("vikram@example.com", "vikram.new@example.com")
+    assert field_map2["status"] == ("In Progress", "Closed")
 
 
 def test_stats_endpoint():

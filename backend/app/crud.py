@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
-from app.models import Ticket, Note
+from app.models import Ticket, Note, TicketEditLog
 from app.schemas import TicketCreate, TicketUpdate
 from app.services.ticket_service import generate_ticket_id
 
@@ -68,16 +68,34 @@ def update_ticket(db: Session, db_ticket: Ticket, ticket_update: TicketUpdate) -
     now = datetime.utcnow()
     updated = False
 
-    if ticket_update.status:
-        db_ticket.status = ticket_update.status
-        updated = True
+    # Track fields to check for modifications
+    tracked_fields = [
+        "customer_name",
+        "customer_email",
+        "subject",
+        "description",
+        "status",
+        "priority",
+    ]
 
-    if ticket_update.priority:
-        db_ticket.priority = ticket_update.priority
-        updated = True
-
-    if updated:
-        db_ticket.updated_at = now
+    for field in tracked_fields:
+        new_val = getattr(ticket_update, field, None)
+        if new_val is not None:
+            old_val = getattr(db_ticket, field, None)
+            # Compare normalized values
+            old_str = str(old_val).strip() if old_val is not None else ""
+            new_str = str(new_val).strip() if new_val is not None else ""
+            if old_str != new_str:
+                edit_log = TicketEditLog(
+                    ticket_id=db_ticket.id,
+                    field_name=field,
+                    old_value=old_str,
+                    new_value=new_str,
+                    created_at=now,
+                )
+                db.add(edit_log)
+                setattr(db_ticket, field, new_val)
+                updated = True
 
     if ticket_update.notes and ticket_update.notes.strip():
         note = Note(
@@ -86,6 +104,9 @@ def update_ticket(db: Session, db_ticket: Ticket, ticket_update: TicketUpdate) -
             created_at=now,
         )
         db.add(note)
+        updated = True
+
+    if updated:
         db_ticket.updated_at = now
 
     db.commit()
@@ -105,6 +126,18 @@ def add_note_to_ticket(db: Session, db_ticket: Ticket, note_text: str) -> Note:
     db.commit()
     db.refresh(note)
     return note
+
+
+def get_ticket_edit_logs(db: Session, ticket_id: str) -> List[TicketEditLog]:
+    ticket = get_ticket_by_ticket_id(db, ticket_id)
+    if not ticket:
+        return []
+    return (
+        db.query(TicketEditLog)
+        .filter(TicketEditLog.ticket_id == ticket.id)
+        .order_by(TicketEditLog.created_at.desc())
+        .all()
+    )
 
 
 def get_ticket_stats(db: Session) -> dict:

@@ -213,14 +213,18 @@ VITE_API_URL=
 
 ### Deploying Backend to Railway
 1. Push repository to GitHub.
-2. Create a new service on Railway connected to your repository, specifying `/backend` as the Root Directory.
-3. Railway automatically detects `requirements.txt` and `Procfile`.
-4. Set environment variable: https://crmsystem-production-ec78.up.railway.app/tickets
+2. Create a new service on Railway connected to your repository, specifying `/backend` as the **Root Directory**.
+3. Railway automatically detects `requirements.txt` and `Procfile` / `railway.json`.
+4. Under **Settings > Networking > Public Networking**, click **Generate Domain** to get your backend URL (e.g. `https://your-backend.up.railway.app`).
+5. (Optional) Set environment variables if needed:
+   * `FRONTEND_URL`: `https://your-frontend-domain.vercel.app` (or your frontend domain)
+   * `ALLOW_ALL_CORS`: `true`
 
-### Deploying Frontend to Vercel
-1. Connect repository to Vercel, setting `/frontend` as the Root Directory.
+### Deploying Frontend to Vercel / Railway
+1. Connect repository to Vercel (or create a frontend service on Railway), setting `/frontend` as the **Root Directory**.
 2. Build command: `npm run build`, Output directory: `dist`.
-3. Set environment variable: `VITE_API_URL=https://your-backend.railway.app`.
+3. Set environment variable:
+   * `VITE_API_URL`: `https://your-backend.up.railway.app` (replace with your generated Railway backend URL)
 
 ---
 

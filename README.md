@@ -215,7 +215,7 @@ VITE_API_URL=
 1. Push repository to GitHub.
 2. Create a new service on Railway connected to your repository, specifying `/backend` as the Root Directory.
 3. Railway automatically detects `requirements.txt` and `Procfile`.
-4. Set environment variable: `FRONTEND_URL=https://your-frontend.vercel.app`.
+4. Set environment variable: https://crmsystem-production-ec78.up.railway.app/tickets
 
 ### Deploying Frontend to Vercel
 1. Connect repository to Vercel, setting `/frontend` as the Root Directory.

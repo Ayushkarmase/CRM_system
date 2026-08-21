@@ -1,0 +1,8 @@
+# Railway Monorepo Configuration
+# Defines two services: backend (FastAPI) and frontend (React/Vite)
+
+[services.backend]
+  source = "backend"
+
+[services.frontend]
+  source = "frontend"

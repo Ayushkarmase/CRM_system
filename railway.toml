@@ -1,8 +1,6 @@
-# Railway Monorepo Configuration
-# Defines two services: backend (FastAPI) and frontend (React/Vite)
-
-[services.backend]
-  source = "backend"
-
-[services.frontend]
-  source = "frontend"
+# Railway Monorepo
+# Each service in Railway dashboard must have its Root Directory set:
+#   Backend service  → Root Directory: backend
+#   Frontend service → Root Directory: frontend
+#
+# Each subdirectory has its own railway.json with build/start commands.

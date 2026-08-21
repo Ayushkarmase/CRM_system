@@ -1,4 +1,4 @@
 #!/bin/bash
-# Railway start script for DeskFlow backend
-cd backend
-exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# This file is no longer needed.
+# Railpack auto-detects main.py at the repo root and starts uvicorn automatically.
+echo "Use main.py at root for Railway deployment."

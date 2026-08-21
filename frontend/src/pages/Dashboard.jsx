@@ -4,7 +4,7 @@ import { ticketApi } from '../services/api';
 import TicketTable from '../components/TicketTable';
 import SearchBar from '../components/SearchBar';
 import { SkeletonTable } from '../components/Skeleton';
-import { Ticket, Clock, CheckCircle, AlertCircle, Plus, ArrowRight, Search, X } from 'lucide-react';
+import { Ticket, Clock, CheckCircle, AlertCircle, Plus, ArrowRight, Search, X, Calendar } from 'lucide-react';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -15,6 +15,34 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getGreeting = () => {
+    const hours = currentTime.getHours();
+    if (hours < 12) return 'Good morning';
+    if (hours < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const formattedDate = currentTime.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const formattedTime = currentTime.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,11 +126,20 @@ export const Dashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            Good morning, Support Team
+            {getGreeting()}, Support Team
           </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">
-            Here's what's happening with your support queue.
-          </p>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 bg-slate-100/90 border border-slate-200/90 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-md shadow-xs">
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
+              <span>{formattedDate}</span>
+              <span className="text-slate-300">•</span>
+              <Clock className="w-3.5 h-3.5 text-slate-500" />
+              <span className="font-mono text-slate-800">{formattedTime}</span>
+            </span>
+            <span className="text-xs text-slate-500 font-medium">
+              Here's what's happening with your support queue.
+            </span>
+          </div>
         </div>
         <Link
           to="/tickets/new"

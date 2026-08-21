@@ -3,9 +3,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.routes import tickets, ai
+from app.seed import auto_seed_if_empty
 
 # Create database tables automatically on startup
 Base.metadata.create_all(bind=engine)
+auto_seed_if_empty()
 
 app = FastAPI(
     title="DeskFlow API",
